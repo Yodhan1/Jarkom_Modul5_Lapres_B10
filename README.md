@@ -334,4 +334,4 @@ yg memiliki aturan DROP adalah :
 
 Contoh pada no.3, terdapat pencatatan LOGGING pada fungsi DROP
 
-![](.//img/lah3.PNG)
+![](.//img/lah_3.PNG)
