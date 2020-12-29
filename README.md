@@ -185,7 +185,153 @@ service isc-dhcp-server start
 service isc-dhcp-relay stop
 service isc-dhcp-relay start
 ```
-## no 1 
+## No 1 
 ```
 iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 10.151.74.46 -s 192.168.0.0/16
 ```
+## No 2
+
+Iptables pada UML Surabaya
+
+```
+iptables -A FORWARD -p tcp --dport 22 -d 10.151.83.88/29 -i etho -j DROP
+```
+
+![](.//img/2.PNG)
+
+Sebelum melakukan Iptables
+
+![](.//img/lom_2.PNG)
+
+Setelah melakukan Iptables
+
+![](.//img/lah_2.PNG)
+
+## No 3
+
+Iptables pada UML Malang dan Mojokerto
+
+```
+iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j DROP
+```
+
+![](.//img/3.PNG)
+![](.//img/3b.PNG)
+
+Sebelum melakukan Iptables, Malang dan Mojokerto dapat di ping lebih dari 3 UML
+
+![](.//img/lom_3.PNG)
+
+Setelah Iptables, Hanya 3 UML
+
+![](.//img/lah_3.PNG)
+
+## No 4
+
+Pada UML Malang
+```
+iptables -A INPUT -s 192.168.2.0/24 -m time --weekdays Sat,Sun -j DROP
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 07:00 --timestop 17:00 --weekdays Mon,Tue,Wed,Thu,Fri -j ACCEPT 
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 17:01 --timestop 00:00 --weekdays Mon,Tue,Wed,Thu,Fri -j DROP
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 00:01 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu,Fri -j DROP
+```
+
+![](.//img/4.PNG)
+
+Sebelum Iptables,
+
+![](.//img/lom_4.PNG)
+
+Setelah Iptables,
+
+![](.//img/lah_4.PNG)
+
+## No 5
+
+Hampir sama seperti no 4, tetapi subnet SIDOARJO diganti dengan subnet GRESIK,
+
+```
+iptables -A INPUT -s 192.168.0.0/24 -m time --timestart 17:00 --timestop 00:00 -j ACCEPT 
+iptables -A INPUT -s 192.168.0.0/24 -m time --timestart 00:00 --timestop 08:00 -j ACCEPT
+iptables -A INPUT -s 192.168.0.0/24 -m time --timestart 08:01 --timestop 16:59 -j DROP
+```
+
+![](.//img/5.PNG)
+
+Sebelum Iptables,
+
+![](.//img/lom_5.PNG)
+
+Setelah Iptables,
+
+![](.//img/lah_5.PNG)
+
+## No 6 - REVISI
+
+Pada UML Surabaya
+
+```
+iptables -t nat -A PREROUTING -p tcp -d 10.151.83.90 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 192.168.3.3:80
+
+iptables -t nat -A PREROUTING -p tcp -d 10.151.83.90 -j DNAT --to-destination 192.168.3.2:80
+```
+
+dengan chain PREROUTING dan tablenat, paket yg menuju DNS Server (Malang) dengan tcp dan port 80 akan didistribusikan ke MADIUN (192.168.3.2) dan PROBOLINGGO (192.168.3.3)
+
+![](.//img/6.PNG)
+
+Untuk Mengecek, 
+1. lakukan ``` nc -l -p 80 ``` pada MADIUN
+2. lakukan ``` nc -l -p 80 ``` pada PROBOLINGGO
+3. lakukan ``` nc 10.151.83.90 80 ``` pada Putty
+4. tuliskan sesuatu pada putty, PROBOLINGGO akan listen/echo tulisan tersebut
+5. stop pada putty
+6. lakukan  kembali ``` nc 10.151.83.90 80 ``` pada Putty
+7. tuliskan sesuatu pada putty, kali ini MADIUN yang akan listen/echo tulisan tersebut
+
+![](.//img/lah_6.PNG)
+
+## No 7
+
+Pada semua UML yg memiliki aturan DROP, lakukan LOGGING
+
+```
+iptables -N LOGGING
+iptables -A INPUT -s 192.168.2.0/24 -m time --weekdays Sat,Sun -j LOGGING
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 07:00 --timestop 17:00 --weekdays Mon,Tue,Wed,Thu,Fri -j ACCEPT 
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 17:01 --timestop 00:00 --weekdays Mon,Tue,Wed,Thu,Fri -j LOGGING
+iptables -A INPUT -s 192.168.2.0/24 -m time --timestart 00:01 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu,Fri -j LOGGING
+iptables -A LOGGING -j LOG --log-prefix "IPTables-Dropped: " --log-level 4
+iptables -A LOGGING -j DROP
+```
+
+Diatas adalah contoh pada UML Malang untuk no.4, pada baris pertama tambahkan
+```
+iptables -N LOGGING
+```
+
+lalu pada baris terakhir tambahkan
+```
+iptables -A LOGGING -j LOG --log-prefix "IPTables-Dropped: " --log-level 4
+iptables -A LOGGING -j DROP
+```
+
+lalu semua aturan ```DROP``` diganti menjadi ```LOGGING```
+
+contoh pada No2
+
+![](.//img/7a.PNG)
+
+yg memiliki aturan DROP adalah :
+
+```
+- No.2
+- No.3
+- No.4
+- No.5
+- No.7 
+```
+
+Contoh pada no.3, terdapat pencatatan LOGGING pada fungsi DROP
+
+![](.//img/lah3.PNG)
